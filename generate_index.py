@@ -20,12 +20,12 @@ def uploadIndexFile(strBucket,strPrefix,strIndexFile):
     s3 = boto3.resource('s3')
     bucket = s3.Bucket(strBucket)
     bucket.upload_file(strIndexFile, strPrefix + strIndexFile,
-                       ExtraArgs={'ACL': 'public-read', 'ContentType': 'text/html'})
+                       ExtraArgs={'ContentType': 'text/html'})
 
 def generateIndexFile(strBucket,strPrefix,strIndexFile,vecFiles,vecFolders,strTemplate):
     with open(strTemplate) as inf:
         txt = inf.read()
-        soup = bs4.BeautifulSoup(txt)
+        soup = bs4.BeautifulSoup(txt, "html.parser")
 
     tagKeysList = soup.find("ul", {"id": "listkeys"})
 
@@ -71,9 +71,9 @@ def generateHeader(soup,strBucket,strPrefix):
     tagHeader.append(tagH)
     return tagHeader
 
-strBucket = ''
-strPrefix = ''
-strIndexFile = 'index.html'
-strTemplate = 'index_template.html'
-
-recPopulateIndexFiles(strBucket,strPrefix,strTemplate)
+if __name__ == '__main__':
+    strBucket = 'maplarge-binaries'
+    strPrefix = ''
+    strIndexFile = 'index.html'
+    strTemplate = 'index_template.html'
+    recPopulateIndexFiles(strBucket,strPrefix,strTemplate)
