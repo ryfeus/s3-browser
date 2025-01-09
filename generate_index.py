@@ -79,8 +79,17 @@ def generateHeader(soup,strBucket,strPrefix):
     return tagHeader
 
 if __name__ == '__main__':
-    strBucket = 'maplarge-binaries'
-    strPrefix = ''
-    strIndexFile = 'index.html'
-    strTemplate = 'index_template.html'
+    import argparse
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-b', '--bucket', type=str, default='my-binaries', required=True)
+    parser.add_argument('-p', '--prefix', type=str, default='', required=False)
+    parser.add_argument('-i', '--indexFile', type=str, default='index.html', required=False)
+    parser.add_argument('-t', '--template', type=str, default='index_template.html', required=False)
+    args = parser.parse_args()
+
+    strBucket = args.bucket
+    strPrefix = args.prefix
+    strIndexFile = args.indexFile
+    strTemplate = args.template
     recPopulateIndexFiles(strBucket,strPrefix,strTemplate)
