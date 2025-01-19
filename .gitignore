@@ -1,0 +1,6 @@
+.venv
+index
+index.html
+**/.idea
+**/*.tgz
+**/*.tar.gz

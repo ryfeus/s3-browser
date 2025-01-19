@@ -20,16 +20,23 @@ def uploadIndexFile(strBucket,strPrefix,strIndexFile):
     s3 = boto3.resource('s3')
     bucket = s3.Bucket(strBucket)
     bucket.upload_file(strIndexFile, strPrefix + strIndexFile,
-                       ExtraArgs={'ACL': 'public-read', 'ContentType': 'text/html'})
+                       ExtraArgs={'ContentType': 'text/html'})
 
 def generateIndexFile(strBucket,strPrefix,strIndexFile,vecFiles,vecFolders,strTemplate):
     with open(strTemplate) as inf:
         txt = inf.read()
-        soup = bs4.BeautifulSoup(txt)
+        soup = bs4.BeautifulSoup(txt, "html.parser")
 
     tagKeysList = soup.find("ul", {"id": "listkeys"})
 
     tagKeysList.append(generateHeader(soup, strBucket, strPrefix))
+
+    if (strPrefix.count('/') > 0):
+        strAncestors = strPrefix.split('/')[:-2]
+        if len(strAncestors) > 0:
+            tagKeysList.append(generateElement(soup, True, '..', '/' + '/'.join(strAncestors) + '/index.html'))
+        else:
+            tagKeysList.append(generateElement(soup, True, '..', '/index.html'))
 
     for strFolder in vecFolders:
         strFolderLast = strFolder.split('/')[-2]
@@ -71,9 +78,18 @@ def generateHeader(soup,strBucket,strPrefix):
     tagHeader.append(tagH)
     return tagHeader
 
-strBucket = ''
-strPrefix = ''
-strIndexFile = 'index.html'
-strTemplate = 'index_template.html'
+if __name__ == '__main__':
+    import argparse
 
-recPopulateIndexFiles(strBucket,strPrefix,strTemplate)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-b', '--bucket', type=str, default='my-binaries', required=True)
+    parser.add_argument('-p', '--prefix', type=str, default='', required=False)
+    parser.add_argument('-i', '--indexFile', type=str, default='index.html', required=False)
+    parser.add_argument('-t', '--template', type=str, default='index_template.html', required=False)
+    args = parser.parse_args()
+
+    strBucket = args.bucket
+    strPrefix = args.prefix
+    strIndexFile = args.indexFile
+    strTemplate = args.template
+    recPopulateIndexFiles(strBucket,strPrefix,strTemplate)
