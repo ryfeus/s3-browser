@@ -1,6 +1,8 @@
 import boto3
 from boto3 import client
 import bs4
+from urllib.parse import quote, unquote
+import os
 
 def getFilesAndFolderOfBucket(strBucket,strPrefix):
     conn = client('s3')
@@ -12,7 +14,10 @@ def getFilesAndFolderOfBucket(strBucket,strPrefix):
             vecFolders.append(key['Prefix'])
     if (sesFolder.get('Contents')!=None):
         for key in sesFolder.get('Contents'):
-            vecFiles.append(key['Key'])
+            if (key['Key'] != strPrefix and 
+                not key['Key'].endswith('/index.html') and 
+                key['Key'] != strPrefix + 'index.html'):
+                vecFiles.append(key['Key'])
 
     return (vecFiles,vecFolders)
 
@@ -28,18 +33,23 @@ def generateIndexFile(strBucket,strPrefix,strIndexFile,vecFiles,vecFolders,strTe
         soup = bs4.BeautifulSoup(txt)
 
     tagKeysList = soup.find("ul", {"id": "listkeys"})
-
     tagKeysList.append(generateHeader(soup, strBucket, strPrefix))
 
+    if strPrefix:
+        parent_prefix = os.path.dirname(os.path.dirname(strPrefix)) + '/'
+        if parent_prefix == '/':
+            parent_prefix = ''
+        tagKeysList.append(generateElement(soup, True, '..', '/' + parent_prefix + 'index.html'))
+
     for strFolder in vecFolders:
-        strFolderLast = strFolder.split('/')[-2]
+        strFolderLast = unquote(strFolder.split('/')[-2])
         tagKeysList.append(generateElement(soup, True, strFolderLast, '/' + strFolder + 'index.html'))
 
     for strFile in vecFiles:
-        strFileLast = strFile.split('/')[-1]
+        strFileLast = unquote(strFile.split('/')[-1])
         tagKeysList.append(generateElement(soup, False, strFileLast, '/' + strFile))
 
-    with open(strIndexFile, "w") as outf:
+    with open(strIndexFile, "w", encoding='utf-8') as outf:
         outf.write(str(soup))
 
 def recPopulateIndexFiles(strBucket,strPrefix,strTemplate):
@@ -57,7 +67,8 @@ def generateElement(soup,flagIsFolder,strText,strURL):
         tagI.string = 'folder_open'
     else:
         tagI.string = 'insert_drive_file'
-    tagA = soup.new_tag("a", href=strURL)
+    encoded_url = quote(strURL)
+    tagA = soup.new_tag("a", href=encoded_url)
     tagA.string = strText
     tagDiv.append(tagI)
     tagDiv.append(tagA)
